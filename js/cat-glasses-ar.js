@@ -136,7 +136,7 @@
       return results?.faceLandmarks?.[0] ?? null;
     }
 
-    // 원래 잘 작동하던 안경의 위치/크기/회전 계산은 그대로 유지합니다.
+    // 안경 중심·회전은 유지하고 크기만 약 30% 키웁니다.
     function drawGlasses(context, face, imageWidth, imageHeight) {
       if (!face || !glassesGraphic.complete || glassesGraphic.naturalWidth === 0) return false;
       const left = face[33];
@@ -149,7 +149,7 @@
       const middleX = ((left.x + right.x) / 2) * imageWidth;
       const middleY = ((left.y + right.y) / 2) * imageHeight;
       const angle = Math.atan2(dy, dx);
-      const glassesWidth = eyeSpan * 1.65;
+      const glassesWidth = eyeSpan * 2.15; // 기존 대비 약 30% 확대
       const glassesHeight = glassesWidth * (180 / 440);
       context.save();
       context.translate(middleX, middleY);
@@ -178,7 +178,7 @@
       const eyeDx = (eyeRight.x - eyeLeft.x) * imageWidth;
       const eyeDy = (eyeRight.y - eyeLeft.y) * imageHeight;
       const angle = Math.atan2(eyeDy, eyeDx);
-      const drawWidth = faceWidth * 1.23;
+      const drawWidth = faceWidth * 1.60; // 기존 대비 약 30% 확대
       const drawHeight = drawWidth * (earsGraphic.naturalHeight / earsGraphic.naturalWidth);
       const EARS_HEIGHT_OFFSET = 0.55;
 
