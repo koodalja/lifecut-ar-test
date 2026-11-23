@@ -188,3 +188,301 @@
     document.addEventListener('DOMContentLoaded', initCatIntro, {once:true});
   } else { initCatIntro(); }
 })();
+
+/*
+ * 고영희씨 v4 확장: 기존 2·4컷 기능을 보존하면서 6·8컷 촬영/프레임을 추가.
+ * 별도의 앱 초기화/촬영 핸들러를 교체하지 않고 확장합니다.
+ * 상단 안내문 정렬 및 풍선껌 팝 연출만 개선합니다.
+ */
+(() => {
+  'use strict';
+  const SUPPORTED_EXTRA = [6, 8];
+  const extra = { count: 0, shots: [], filter: 'original', busy: false };
+
+  function e(id) { return document.getElementById(id); }
+  function focusSafe(element) {
+    if (element && typeof element.focus === 'function') element.focus({preventScroll:true});
+  }
+
+  function makeCutOption(count, description) {
+    const button = document.createElement('button');
+    button.id = count === 6 ? 'select-six-button' : 'select-eight-button';
+    button.className = 'cut-option';
+    button.type = 'button';
+    button.dataset.cutCount = String(count);
+    button.setAttribute('aria-pressed', 'false');
+    const mini = document.createElement('span');
+    mini.className = 'mini-frame mini-frame-' + count;
+    mini.setAttribute('aria-hidden', 'true');
+    for (let index=0; index<count; index++) {
+      const cell=document.createElement('span');
+      cell.className = 'mini-frame-photo';
+      mini.appendChild(cell);
+    }
+    const label=document.createElement('span');
+    label.className='cut-option-label';
+    label.textContent=count+'컷';
+    const desc=document.createElement('span');
+    desc.className='cut-option-description';
+    desc.textContent=description;
+    button.append(mini,label,desc);
+    return button;
+  }
+
+  function layoutMoreShots(shots) {
+    if (![6,8].includes(shots.length)) throw new Error('6컷 또는 8컷 사진을 확인해 주세요.');
+    // 2컷·4컷은 원래 세로형, 6컷·8컷은 가로 2열의 3·4행으로 구성.
+    const cols=2;
+    const rows=shots.length/cols;
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    if(!ctx) throw new Error('사진 프레임을 준비하지 못했습니다.');
+    const frameWidth=720;
+    const padX=42;
+    const gapX=18;
+    const gapY=18;
+    const cellW=(frameWidth-2*padX-gapX)/cols;
+    const cellH=cellW*3/4;
+    const top=42;
+    const foot=142;
+    canvas.width=frameWidth;
+    canvas.height=Math.ceil(top+rows*cellH+(rows-1)*gapY+foot);
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    shots.forEach((shot,index)=>{
+      if(!shot || !shot.width || !shot.height) throw new Error((index+1)+'번째 사진이 비어 있습니다.');
+      const targetRatio=cellW/cellH;
+      const ratio=shot.width/shot.height;
+      let sx=0,sy=0,sw=shot.width,sh=shot.height;
+      if(ratio>targetRatio) {sw=shot.height*targetRatio;sx=(shot.width-sw)/2;}
+      else {sh=shot.width/targetRatio;sy=(shot.height-sh)/2;}
+      const row=Math.floor(index/cols);
+      const col=index%cols;
+      const dx=padX+col*(cellW+gapX);
+      const dy=top+row*(cellH+gapY);
+      ctx.drawImage(shot,sx,sy,sw,sh,dx,dy,cellW,cellH);
+    });
+    const footerY=top+rows*cellH+(rows-1)*gapY;
+    const date=new Date();
+    const dateText=date.getFullYear()+'.'+String(date.getMonth()+1).padStart(2,'0')+'.'+String(date.getDate()).padStart(2,'0');
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#302b28';
+    ctx.font="700 30px 'Noto Sans KR',sans-serif";
+    ctx.fillText('인생네컷',frameWidth/2,footerY+51);
+    ctx.fillStyle='#8b7b70';
+    ctx.font="500 18px 'Noto Sans KR',sans-serif";
+    ctx.fillText(dateText,frameWidth/2,footerY+91);
+    return canvas;
+  }
+
+  function renderExtraResult() {
+    if(extra.shots.length!==extra.count) throw new Error('촬영한 사진이 모두 준비되지 않았어요.');
+    const filtered=extra.shots.map(shot=>window.applyFilter(shot,extra.filter));
+    const strip=layoutMoreShots(filtered);
+    const frame=e('final-frame');
+    const ctx=frame.getContext('2d');
+    if(!ctx) throw new Error('최종 사진을 표시하지 못했습니다.');
+    frame.width=strip.width;
+    frame.height=strip.height;
+    ctx.drawImage(strip,0,0);
+  }
+
+  function chooseExtraCount(count) {
+    extra.count=count;
+    extra.shots=[];
+    extra.filter='original';
+    const selected=e('selected-count');
+    const countLabel=e('progress-count');
+    const cameraStatus=e('camera-status');
+    const previewList=e('shot-previews');
+    e('selection-screen').classList.add('hidden');
+    e('result-screen').classList.add('hidden');
+    e('capture-screen').classList.remove('hidden');
+    document.querySelectorAll('#cut-options .cut-option').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.cutCount)===count)));
+    selected.textContent=count+'컷 촬영';
+    countLabel.textContent='0 / '+count;
+    cameraStatus.textContent='시작 버튼을 누르면 '+count+'번 자동으로 촬영합니다.';
+    e('selection-status').textContent=count+'컷을 선택했어요.';
+    e('preview-count').textContent='0장';
+    previewList.replaceChildren();
+    e('camera-placeholder').classList.remove('hidden');
+    e('camera-video').classList.add('hidden');
+    e('start-capture-button').textContent='촬영 시작';
+  }
+
+  async function takeExtraShots() {
+    if(!extra.count || extra.busy) return;
+    const count=extra.count;
+    const video=e('camera-video');
+    const countdown=e('countdown');
+    const status=e('camera-status');
+    const preview=e('shot-previews');
+    const previewCount=e('preview-count');
+    const progress=e('progress-count');
+    const start=e('start-capture-button');
+    const back=e('back-to-selection-button');
+    extra.busy=true;
+    extra.shots=[];
+    extra.filter='original';
+    start.disabled=true;
+    back.disabled=true;
+    preview.replaceChildren();
+    previewCount.textContent='0장';
+    progress.textContent='0 / '+count;
+    countdown.classList.add('hidden');
+    status.textContent='카메라를 연결하고 있어요.';
+    try {
+      // 동적으로 호출해 기존 AR ON/OFF 및 촬영사진 합성을 그대로 이용.
+      await window.startCamera(video);
+      e('camera-placeholder').classList.add('hidden');
+      for(let i=0;i<count;i++) {
+        const number=i+1;
+        progress.textContent=number+' / '+count;
+        status.textContent=number+'번째 사진을 준비하고 있어요.';
+        await window.runCountdown(countdown,status);
+        const shot=await window.captureShot(video);
+        extra.shots.push(shot);
+        window.addShotPreview(shot,number,preview);
+        previewCount.textContent=extra.shots.length+'장';
+        if(number<count) {
+          status.textContent='다음 사진을 준비하고 있어요.';
+          await window.wait(700);
+        }
+      }
+      window.stopCamera(video);
+      video.classList.add('hidden');
+      renderExtraResult();
+      const filters=e('filters');
+      filters.querySelectorAll('.filter-btn').forEach(b=>{
+        const current=b.id==='filter-button-original';
+        b.classList.toggle('active',current);
+        b.setAttribute('aria-pressed',String(current));
+      });
+      e('capture-screen').classList.add('hidden');
+      e('result-screen').classList.remove('hidden');
+      e('result-status').textContent=count+'장의 사진으로 프레임을 만들었어요.';
+    } catch(error) {
+      console.error('[고영희씨 6/8컷] 촬영 오류:',error);
+      try {window.stopCamera(video);} catch(e) {}
+      video.classList.add('hidden');
+      e('camera-placeholder').classList.remove('hidden');
+      countdown.classList.add('hidden');
+      const reason=typeof window.getCameraErrorMessage==='function' ? window.getCameraErrorMessage(error) : (error.message || '촬영 오류');
+      status.textContent=reason+' 다시 촬영하거나 컷 수를 다시 골라 주세요.';
+      progress.textContent=extra.shots.length+' / '+count;
+      start.textContent='다시 촬영하기';
+    } finally {
+      extra.busy=false;
+      start.disabled=false;
+      back.disabled=false;
+    }
+  }
+
+  function initCutsAndIntro() {
+    const cutOptions=e('cut-options');
+    const start=e('start-capture-button');
+    const filters=e('filters');
+    const pageIntro=e('page-intro');
+    if(!cutOptions || !start || !filters || e('select-six-button')) return;
+    // 기존 인트로 문구의 '사진'이 줄 끝에서 갈라지지 않도록 의미 단위로 두 줄 고정.
+    if(pageIntro){
+      pageIntro.innerHTML='<span class="cat-intro-line">원하는 컷 수를 고르고</span><span class="cat-intro-line">나만의 사진을 남겨 보세요.</span>';
+    }
+    const badge=e('selection-badge');
+    if(badge) badge.textContent='2 · 4 · 6 · 8컷';
+    const hint=e('selection-status');
+    if(hint) hint.textContent='2컷, 4컷, 6컷, 8컷 중 선택해 주세요.';
+    cutOptions.append(makeCutOption(6,'다양하게 여섯 장'),makeCutOption(8,'풍성하게 여덟 장'));
+    SUPPORTED_EXTRA.forEach(count=>{
+      e(count===6?'select-six-button':'select-eight-button')
+        .addEventListener('click',()=>chooseExtraCount(count));
+    });
+    ['select-two-button','select-four-button'].forEach(id=>{
+      e(id)?.addEventListener('click',()=>{extra.count=0;extra.shots=[];});
+    });
+    // 앱의 2·4컷 클릭 핸들러는 유지하고 6·8컷을 선택한 경우만 차단/대체.
+    start.addEventListener('click',event=>{
+      if(!extra.count) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void takeExtraShots();
+    },{capture:true});
+    filters.addEventListener('click',event=>{
+      if(!extra.count || extra.shots.length!==extra.count) return;
+      const button=event.target.closest('.filter-btn');
+      if(!button || !filters.contains(button)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      extra.filter=button.id.replace('filter-button-','');
+      filters.querySelectorAll('.filter-btn').forEach(b=>{
+        const active=b===button;
+        b.classList.toggle('active',active);
+        b.setAttribute('aria-pressed',String(active));
+      });
+      try {
+        renderExtraResult();
+        e('result-status').textContent=button.textContent+' 필터를 적용했어요.';
+      } catch(error) {
+        console.error('[고영희씨 6/8컷] 필터 오류:',error);
+        e('result-status').textContent=error.message || '필터를 적용하지 못했어요.';
+      }
+    },{capture:true});
+    const resetExtra=()=>{
+      extra.count=0;
+      extra.shots=[];
+      extra.filter='original';
+      document.querySelectorAll('#cut-options .cut-option').forEach(b=>b.setAttribute('aria-pressed','false'));
+    };
+    e('back-to-selection-button')?.addEventListener('click',()=>{if(!extra.busy)resetExtra();});
+    e('restart-button')?.addEventListener('click',resetExtra);
+
+    // 풍선껌 터짐: 본래 이미지 보존, 흰 번쩍임/별 파편/짧은 카툰 팡 효과 강화.
+    const hero=e('cat-pop-hero');
+    const artwork=hero?.querySelector('.cat-pop-artwork');
+    const bubble=hero?.querySelector('.cat-pop-start');
+    if(!hero || !artwork || !bubble) return;
+    const flash=document.createElement('span');
+    flash.className='cat-pop-impact-flash';
+    flash.setAttribute('aria-hidden','true');
+    artwork.appendChild(flash);
+    const pieces=[];
+    for(let i=0;i<10;i++) {
+      const part=document.createElement('span');
+      part.className='cat-pop-confetti';
+      part.setAttribute('aria-hidden','true');
+      part.style.setProperty('--angle',String(i*36)+'deg');
+      part.style.setProperty('--turn',String((i%2?1:-1)*130)+'deg');
+      artwork.appendChild(part);
+      pieces.push(part);
+    }
+    const popSound=()=>{
+      try {
+        const AudioCtx=window.AudioContext||window.webkitAudioContext;
+        if(!AudioCtx) return;
+        const audio=new AudioCtx();
+        const osc=audio.createOscillator();
+        const gain=audio.createGain();
+        osc.type='triangle';
+        osc.frequency.setValueAtTime(520,audio.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(115,audio.currentTime+.13);
+        gain.gain.setValueAtTime(.045,audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.15);
+        osc.connect(gain);gain.connect(audio.destination);
+        osc.start();osc.stop(audio.currentTime+.16);
+        osc.onended=()=>{void audio.close().catch(()=>{});};
+      } catch(error) { /* 소리를 못 내도 화면 전환은 정상 진행 */ }
+    };
+    bubble.addEventListener('click',()=>{
+      const radius=Math.min(artwork.clientWidth*.23,155);
+      pieces.forEach((part,i)=>{
+        const rad=2*Math.PI*i/pieces.length;
+        part.style.setProperty('--dx',Math.cos(rad)*radius+'px');
+        part.style.setProperty('--dy',Math.sin(rad)*radius*.82+'px');
+      });
+      popSound();
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initCutsAndIntro,{once:true});
+  else initCutsAndIntro();
+})();
