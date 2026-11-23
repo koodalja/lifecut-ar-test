@@ -1,6 +1,6 @@
-/* 고영희씨 AR: 핑크 선글라스 + 고양이 귀(머리띠 없음) + 얼굴톤 보정
+/* 고영희씨 AR: 핑크 선글라스 + 고양이 귀(머리띠 없음) + 고양이 수염 + 얼굴톤 보정
  * 기존 app.js / camera.js / cat-intro.js / index.html / CSS를 변경하지 않습니다.
- * 기존 FaceLandmarker 1개를 3개 기능이 공유합니다.
+ * 기존 FaceLandmarker 1개를 4개 기능이 공유합니다.
  * 준비 파일: images/cat-pink-glasses.svg, images/cat-ears-only.png
  * 주의: 이 버전은 얼굴 영역의 밝기/대비/채도를 부드럽게 조절하며
  *       피부 질감 리터칭이나 얼굴형 변경 기능은 아닙니다.
@@ -58,12 +58,14 @@
       <button type="button" id="cat-ar-toggle" class="cat-ar-toggle" aria-pressed="false">😎 고영희씨 안경 OFF</button>
       <button type="button" id="cat-ears-toggle" class="cat-ar-toggle" aria-pressed="false">🐱 고양이 귀 OFF</button>
       <button type="button" id="cat-tone-toggle" class="cat-ar-toggle" aria-pressed="false">✨ 얼굴톤 OFF</button>
+      <button type="button" id="cat-whiskers-toggle" class="cat-ar-toggle" aria-pressed="false">🐾 고양이 수염 OFF</button>
       <span id="cat-ar-status" class="cat-ar-status" role="status" aria-live="polite">기본 촬영</span>`;
     progress.insertAdjacentElement('afterend', toolbar);
 
     const glassesButton = toolbar.querySelector('#cat-ar-toggle');
     const earsButton = toolbar.querySelector('#cat-ears-toggle');
     const toneButton = toolbar.querySelector('#cat-tone-toggle');
+    const whiskersButton = toolbar.querySelector('#cat-whiskers-toggle');
     const status = toolbar.querySelector('#cat-ar-status');
     const overlay = document.createElement('canvas');
     overlay.id = 'cat-ar-overlay';
@@ -82,6 +84,7 @@
     let glassesEnabled = false;
     let earsEnabled = false;
     let toneEnabled = false;
+    let whiskersEnabled = false;
     let detector = null;
     let loadPromise = null;
     let raf = null;
@@ -95,7 +98,7 @@
     const toneContext = toneCanvas.getContext('2d');
     const maskContext = faceMaskCanvas.getContext('2d');
 
-    const anyEnabled = () => glassesEnabled || earsEnabled || toneEnabled;
+    const anyEnabled = () => glassesEnabled || earsEnabled || toneEnabled || whiskersEnabled;
 
     function updateStatus(message) {
       status.textContent = message;
@@ -108,6 +111,8 @@
       earsButton.textContent = earsEnabled ? '🐱 고양이 귀 ON' : '🐱 고양이 귀 OFF';
       toneButton.setAttribute('aria-pressed', String(toneEnabled));
       toneButton.textContent = toneEnabled ? '✨ 얼굴톤 ON' : '✨ 얼굴톤 OFF';
+      whiskersButton.setAttribute('aria-pressed', String(whiskersEnabled));
+      whiskersButton.textContent = whiskersEnabled ? '🐾 고양이 수염 ON' : '🐾 고양이 수염 OFF';
     }
 
     async function loadDetector() {
@@ -226,6 +231,51 @@
       return true;
     }
 
+    // 얼굴을 따라 이동하는 양쪽 고양이 수염: 별도 이미지 파일이 필요 없습니다.
+    // 실제 눈·코·입 위치에서 기준점/회전각/크기를 가져와 미리보기와 저장에 동일하게 그림.
+    function drawWhiskers(context, face, width, height) {
+      if (!face) return false;
+      const leftEye = face[33], rightEye = face[263];
+      const leftEdge = face[234], rightEdge = face[454];
+      const nose = face[1], mouthL = face[61], mouthR = face[291];
+      if (!leftEye || !rightEye || !leftEdge || !rightEdge || !nose || !mouthL || !mouthR) return false;
+      const fw = Math.hypot((rightEdge.x - leftEdge.x) * width, (rightEdge.y - leftEdge.y) * height);
+      if (!Number.isFinite(fw) || fw < 25) return false;
+      const roll = Math.atan2((rightEye.y - leftEye.y) * height, (rightEye.x - leftEye.x) * width);
+      const mouthY = ((mouthL.y + mouthR.y) / 2) * height;
+      const baseY = nose.y * height * 0.48 + mouthY * 0.52;
+      const stroke = Math.max(1.3, fw * 0.008);
+      context.save();
+      context.translate(nose.x * width, baseY);
+      context.rotate(roll);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      for (const side of [-1, 1]) {
+        for (let line = -1; line <= 1; line++) {
+          const startX = side * fw * 0.19;
+          const endX = side * fw * 0.49;
+          const y = line * fw * 0.069;
+          const endY = line * fw * 0.105;
+          const trace = () => {
+            context.beginPath();
+            context.moveTo(startX, y);
+            context.bezierCurveTo(side * fw * 0.26, y - fw * 0.015,
+              side * fw * 0.38, endY, endX, endY);
+            context.stroke();
+          };
+          // 밝은 외곽선을 얇게 두어 어두운 피부/배경에서도 수염이 묻히지 않게 함.
+          context.strokeStyle = 'rgba(255, 252, 250, 0.87)';
+          context.lineWidth = stroke * 2.5;
+          trace();
+          context.strokeStyle = 'rgba(148, 58, 88, 0.92)';
+          context.lineWidth = stroke;
+          trace();
+        }
+      }
+      context.restore();
+      return true;
+    }
+
     // 얼굴 윤곽을 부드럽게 마스킹해 톤 보정이 주변 배경에 적용되지 않게 합니다.
     // 이마, 눈, 코, 입까지 포함하는 얼굴 영역이며 정밀 피부 분할은 아닙니다.
     function applyFaceTone(context, source, face, imageWidth, imageHeight) {
@@ -283,6 +333,7 @@
       if (toneEnabled) applyFaceTone(context, source, face, width, height);
       if (earsEnabled) drawEars(context, face, width, height);
       if (glassesEnabled) drawGlasses(context, face, width, height);
+      if (whiskersEnabled) drawWhiskers(context, face, width, height);
     }
 
     function paintPreview() {
@@ -330,6 +381,7 @@
           glassesEnabled = false;
           earsEnabled = false;
           toneEnabled = false;
+          whiskersEnabled = false;
           updateButtons();
           updateStatus('얼굴 추적 오류 · OFF 후 다시 시도');
           stopTracking();
@@ -347,11 +399,12 @@
     }
 
     async function toggleFilter(which) {
-      const current = which === 'glasses' ? glassesEnabled : which === 'ears' ? earsEnabled : toneEnabled;
+      const current = which === 'glasses' ? glassesEnabled : which === 'ears' ? earsEnabled : which === 'tone' ? toneEnabled : whiskersEnabled;
       if (current) {
         if (which === 'glasses') glassesEnabled = false;
         else if (which === 'ears') earsEnabled = false;
-        else toneEnabled = false;
+        else if (which === 'tone') toneEnabled = false;
+        else whiskersEnabled = false;
         updateButtons();
         if (!anyEnabled()) {
           stopTracking();
@@ -362,7 +415,7 @@
         return;
       }
 
-      const selectedButton = which === 'glasses' ? glassesButton : which === 'ears' ? earsButton : toneButton;
+      const selectedButton = which === 'glasses' ? glassesButton : which === 'ears' ? earsButton : which === 'tone' ? toneButton : whiskersButton;
       selectedButton.disabled = true;
       updateStatus('얼굴 추적 모델 불러오는 중…');
       try {
@@ -371,7 +424,8 @@
         await loadDetector();
         if (which === 'glasses') glassesEnabled = true;
         else if (which === 'ears') earsEnabled = true;
-        else toneEnabled = true;
+        else if (which === 'tone') toneEnabled = true;
+        else whiskersEnabled = true;
         updateButtons();
         updateStatus(videoActive() ? '얼굴 추적 중' : '준비 완료 · 촬영 시작을 눌러 주세요');
         startTracking();
@@ -382,7 +436,8 @@
         updateStatus(which === 'ears'
           ? '고양이 귀 이미지 또는 얼굴 추적 모듈 연결 실패'
           : which === 'glasses' ? '선글라스 이미지 또는 얼굴 추적 모듈 연결 실패'
-            : '얼굴톤 보정 모델 연결 실패 · 인터넷 확인');
+            : which === 'tone' ? '얼굴톤 보정 모델 연결 실패 · 인터넷 확인'
+              : '고양이 수염 얼굴 추적 모듈 연결 실패 · 인터넷 확인');
       } finally {
         selectedButton.disabled = false;
       }
@@ -391,6 +446,7 @@
     glassesButton.addEventListener('click', () => toggleFilter('glasses'));
     earsButton.addEventListener('click', () => toggleFilter('ears'));
     toneButton.addEventListener('click', () => toggleFilter('tone'));
+    whiskersButton.addEventListener('click', () => toggleFilter('whiskers'));
 
     const originalStartCamera = window.startCamera;
     const originalStopCamera = window.stopCamera;
