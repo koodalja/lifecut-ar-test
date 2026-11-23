@@ -246,7 +246,22 @@ function initApp() {
 
   // 완성 프레임을 업로드하고, 공개 주소의 QR 코드와 링크를 표시합니다.
   qrButton.addEventListener("click", async function () {
-    if (qrButton.disabled || !state.strip) {
+    if (qrButton.disabled) {
+      return;
+    }
+
+    if (!state.strip) {
+      qrMessage.textContent = "완성된 사진을 찾지 못했어요. 사진을 다시 촬영해 주세요.";
+      return;
+    }
+
+    if (typeof uploadPhoto !== "function" || typeof drawQrCode !== "function") {
+      qrMessage.textContent = "사진 받기 기능을 불러오지 못했어요. 페이지를 새로고침해 주세요.";
+      return;
+    }
+
+    if (typeof QRCode !== "function") {
+      qrMessage.textContent = "QR 코드를 불러오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.";
       return;
     }
 
@@ -270,8 +285,16 @@ function initApp() {
       }
 
       console.error("사진 업로드에 실패했습니다.", error);
-      qrMessage.textContent = "올리지 못했어요: "
-        + (error && error.message ? error.message : "알 수 없는 오류가 발생했습니다.");
+      var errorMessage = error && error.message
+        ? error.message
+        : "알 수 없는 오류가 발생했습니다.";
+      if (/row-level security|not authorized|permission denied/i.test(errorMessage)) {
+        errorMessage += " Supabase에서 photos 버킷의 익명 업로드 정책을 확인해 주세요.";
+      } else if (/bucket not found|does not exist/i.test(errorMessage)) {
+        errorMessage += " Supabase Storage에 공개 photos 버킷이 있는지 확인해 주세요.";
+      }
+
+      qrMessage.textContent = "올리지 못했어요: " + errorMessage;
       qrButton.disabled = false;
     }
   });
