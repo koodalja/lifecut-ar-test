@@ -1,0 +1,41 @@
+/* STEP 02에만 나타나는 고영희씨 선글라스 필터 UI */
+.cat-ar-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px 10px;
+  margin:0 1px 12px;
+  font-family:'Gaegu','Malgun Gothic',sans-serif;
+}
+.cat-ar-toggle {
+  min-height:42px;
+  padding:8px 15px;
+  border:2px solid #f54d78;
+  border-radius:999px;
+  background:#fff9fc;
+  color:#c91647;
+  font:700 19px/1.2 'Gaegu','Malgun Gothic',sans-serif;
+  cursor:pointer;
+}
+.cat-ar-toggle[aria-pressed="true"] {
+  background:#f51e50;
+  color:white;
+  box-shadow:0 4px 0 #b30b39;
+}
+.cat-ar-toggle:disabled {opacity:.6;cursor:wait;}
+.cat-ar-toggle:focus-visible {outline:3px solid #7fd5e6;outline-offset:2px;}
+.cat-ar-status {
+  color:#8c3f5a;
+  font:700 16px/1.2 'Gaegu','Malgun Gothic',sans-serif;
+}
+#camera-stage .cat-ar-overlay {
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  /* 기존 .camera-preview도 좌우 반전되어 있으므로 동일하게 적용 */
+  transform:scaleX(-1);
+}

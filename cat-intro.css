@@ -1,0 +1,414 @@
+@import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&family=Yeon+Sung&display=swap');
+
+/* 고영희씨 원본색 기반 팝아트 모바일 테마 (추가 CSS; 기존 style.css 보존) */
+:root {
+  --cat-pink: #ff9ba8;
+  --cat-blue: #7ad7e8;
+  --cat-red: #f51c3b;
+  --cat-dark: #2c2024;
+  --cat-soft: #fff8fb;
+  --cat-font: "Gaegu", "NanumSquareRound", "Malgun Gothic", "Noto Sans CJK KR", sans-serif;
+}
+body#doc-body {
+  background: var(--cat-pink);
+  min-width: 320px;
+}
+body.cat-pop-selection #app-shell {
+  width: min(100% - 22px, 520px);
+  padding: 16px 0 26px;
+}
+body.cat-pop-selection #page-header { display: none; }
+/* The original application screens remain in place. */
+#cat-pop-hero[hidden] { display: none !important; }
+.cat-pop-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 27px 27px 0 0;
+  background: var(--cat-blue);
+  box-shadow: 0 14px 32px rgba(114, 29, 56, .15);
+}
+.cat-pop-topbar {
+  height: 62px;
+  padding: 7px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--cat-blue);
+}
+/* Approved handwritten "인생네컷" lettering, extracted without a font dependency. */
+.cat-pop-brand { margin: 0; width: 154px; height: 62px; }
+.cat-pop-brand img { display:block; width: 100%; height:100%; object-fit: contain; }
+.cat-pop-artwork { position: relative; width: 100%; aspect-ratio: 837/533; overflow: hidden; background: var(--cat-blue); }
+.cat-pop-artwork > img { display: block; width: 100%; height: 100%; object-fit: fill; user-select: none; }
+/* Invisible, keyboard-accessible real button aligned to the ORIGINAL drawn button. */
+.cat-pop-start {
+  position: absolute;
+  left: 3.1%; top: 81.2%; width: 38%; height: 15%;
+  padding: 0; border: 0; border-radius: 999px;
+  background: transparent; color: transparent;
+  cursor: pointer; -webkit-tap-highlight-color: rgba(250, 36, 70, .15);
+}
+.cat-pop-start:focus-visible { outline: 3px solid var(--cat-red); outline-offset: 3px; }
+.cat-pop-burst, .cat-pop-ring {
+  position: absolute; left: 51%; top: 58%;
+  opacity: 0; pointer-events: none;
+}
+.cat-pop-burst {
+  z-index: 3;
+  color: var(--cat-red);
+  text-shadow: 4px 4px white, -3px -3px white, 0 0 15px white;
+  font: 900 clamp(50px, 15vw, 90px)/1 var(--cat-font);
+  transform: translate(-50%, -50%) scale(.25) rotate(-20deg);
+}
+.cat-pop-ring {
+  width: 32%; aspect-ratio: 1; border: 7px solid white; border-radius: 50%;
+  transform: translate(-50%, -50%) scale(.25);
+}
+.cat-pop-bursting .cat-pop-burst { animation: cat-pop-word .6s ease-out both; }
+.cat-pop-bursting .cat-pop-ring { animation: cat-pop-ripple .58s ease-out both; }
+.cat-pop-note {
+  margin: 0;
+  padding: 4px 12px 14px;
+  text-align: center;
+  color: #b12b4e;
+  background: var(--cat-blue);
+  font-family: var(--cat-font);
+  font-size: 20px;
+  font-weight: 800;
+}
+.cat-pop-note span { color: var(--cat-red); margin-left: 4px; }
+.cat-pop-image-error > img { display: none; }
+.cat-pop-error-message { color: #a5002e; padding: 20px; font-size: 14px; }
+@keyframes cat-pop-word {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-18deg); }
+  20%, 58% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.25) rotate(12deg); }
+}
+@keyframes cat-pop-ripple {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(.25); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.3); }
+}
+/* Existing 2/4-cut selection: restyle only; keep current IDs and listeners. */
+body.cat-pop-selection #selection-screen {
+  position: relative;
+  z-index: 1;
+  margin-top: -4px;
+  padding: 24px 20px 20px;
+  border: 2px solid #ffd1e0;
+  border-radius: 30px;
+  background: linear-gradient(165deg, #fff9fc 0%, #fff2f8 100%);
+  box-shadow: 0 16px 31px rgba(139, 42, 77, .14);
+  scroll-margin-top: 12px;
+}
+body.cat-pop-selection #selection-heading-row { gap: 8px; align-items: flex-start; }
+body.cat-pop-selection #selection-step {
+  display: inline-block;
+  color: #f17899;
+  font-family: var(--cat-font);
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: .04em;
+  transform: rotate(-4deg);
+  border-bottom: 2px solid #f17899;
+}
+body.cat-pop-selection #selection-heading {
+  margin: 8px 0 12px;
+  font-family: var(--cat-font);
+  font-size: clamp(23px, 6vw, 32px);
+  color: var(--cat-dark);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -.04em;
+  transform: rotate(-1deg);
+}
+body.cat-pop-selection #selection-badge {
+  margin-top: 4px;
+  padding: 10px 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 2px solid #f6acc5;
+  border-radius: 30px;
+  background: #ffe9f1;
+  color: #e32346;
+  font-family: var(--cat-font);
+  font-weight: 900;
+  font-size: clamp(13px, 3.4vw, 17px);
+  letter-spacing: -.05em;
+  transform: rotate(3deg);
+}
+body.cat-pop-selection #cut-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+body.cat-pop-selection .cut-option {
+  position: relative;
+  min-width: 0;
+  min-height: 216px;
+  padding: 18px 8px 12px;
+  background: #fffdfd;
+  border: 2px solid #f8bdce;
+  border-radius: 28px;
+  box-shadow: 0 7px 14px rgba(204, 91, 124, .08);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+body.cat-pop-selection .cut-option:hover,
+body.cat-pop-selection .cut-option:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--cat-red);
+  box-shadow: 0 11px 20px rgba(204, 63, 97, .16);
+}
+body.cat-pop-selection .cut-option:active { transform: scale(.98); }
+body.cat-pop-selection .cut-option::after {
+  position: absolute; top: 29%; right: 8%; pointer-events: none;
+  font-size: clamp(19px, 5vw, 27px); line-height: 1;
+}
+body.cat-pop-selection #select-two-button::after { content: '♡'; color: #fa547d; transform: rotate(16deg); }
+body.cat-pop-selection #select-four-button::after { content: '✧'; color: #eeb900; transform: rotate(18deg); }
+body.cat-pop-selection .cut-option-label {
+  display: inline-block;
+  margin: 9px 0 3px;
+  padding: 0 12px;
+  border-radius: 26px;
+  color: var(--cat-dark);
+  background: #ffdbe7;
+  font-family: var(--cat-font);
+  font-weight: 900;
+  font-size: clamp(26px, 6vw, 34px);
+  line-height: 1.15;
+}
+body.cat-pop-selection .cut-option-description {
+  color: #62454b;
+  font-family: var(--cat-font);
+  font-size: clamp(15px, 4vw, 21px);
+  line-height: 1.2;
+}
+body.cat-pop-selection .mini-frame {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 66px;
+  height: 102px;
+  padding: 6px;
+  border: 0;
+  border-radius: 0;
+  background: white;
+  box-shadow: 0 5px 12px rgba(64, 39, 37, .18);
+  transform: rotate(-6deg);
+}
+body.cat-pop-selection .mini-frame-four { transform: rotate(5deg); }
+body.cat-pop-selection .mini-frame-photo {
+  display: block; flex: 1; min-height: 0;
+  width: 100%; border: none; border-radius: 0;
+  background: linear-gradient(135deg, #cba68f, #756e69);
+}
+body.cat-pop-selection #selection-status {
+  margin-top: 18px;
+  padding: 6px 4px;
+  color: #5c2835;
+  font-family: var(--cat-font);
+  font-size: clamp(17px, 4.5vw, 23px);
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.3;
+}
+body.cat-pop-selection #page-footer {
+  color: #a63f58; font-size: 12px; text-align: center; margin-top: 16px;
+}
+/* Leave camera and photo canvas intact; only adjust surrounding accent colors. */
+body:not(.cat-pop-selection) #page-title { color: var(--cat-red); }
+body:not(.cat-pop-selection) .step-label { color: #df4060; }
+body:not(.cat-pop-selection) .step-badge { color: #e11b45; background: #ffe3ed; }
+@media (max-width: 420px) {
+  .cat-pop-topbar { height: 47px; padding: 0 14px; }
+  .cat-pop-brand { width: 138px; height: 56px; }
+  body.cat-pop-selection #app-shell { width: min(100% - 12px, 520px); padding-top: 6px; }
+  body.cat-pop-selection #selection-screen { padding: 20px 12px 15px; }
+  body.cat-pop-selection .cut-option { min-height: 196px; padding: 15px 5px 10px; }
+  body.cat-pop-selection .mini-frame { height: 86px; width: 56px; }
+  .cat-pop-note { font-size: 17px; padding-bottom: 8px; }
+}
+@media (max-width: 350px) {
+  body.cat-pop-selection #selection-heading { font-size: 22px; }
+  body.cat-pop-selection #selection-badge { padding: 7px 8px; font-size: 12px; }
+  body.cat-pop-selection .cut-option { min-height: 182px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-pop-bursting .cat-pop-burst, .cat-pop-bursting .cat-pop-ring { animation-duration: .01ms; }
+  body.cat-pop-selection .cut-option { transition: none; }
+}
+
+/* === v3: 시작 버튼에 실제 의미 부여. 원본 앱은 그대로 유지 === */
+:root {
+  --cat-headline-font: 'Yeon Sung','Gaegu','Malgun Gothic',sans-serif;
+  --cat-ui-font: 'Jua','Malgun Gothic',sans-serif;
+  --cat-note-font: 'Gaegu','Malgun Gothic',sans-serif;
+}
+body#doc-body { background: #ff9ba8; }
+body.cat-pop-intro { background: #7ad7e8; }
+/* 인트로에서만 STEP 01 선택화면을 가림. 기존 버튼과 이벤트는 삭제하지 않음. */
+body.cat-pop-intro #selection-screen,
+body.cat-pop-intro #page-header,
+body.cat-pop-intro #page-footer { display:none !important; }
+body.cat-pop-intro #app-shell {
+  width: 100%;
+  max-width: none;
+  min-height: 100svh;
+  padding: 0;
+}
+body.cat-pop-intro #cat-pop-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  width: 100%;
+  padding: max(22px,env(safe-area-inset-top)) 0 max(24px,env(safe-area-inset-bottom));
+  border-radius:0;
+  background: radial-gradient(circle at 85% 26%, rgba(255,255,255,.32), transparent 45%), #7ad7e8;
+  box-shadow:none;
+}
+body.cat-pop-intro .cat-pop-topbar { width:min(100%,540px); height:70px; flex:0 0 auto; }
+body.cat-pop-intro .cat-pop-artwork { width:min(100%,540px); flex:0 0 auto; }
+body.cat-pop-intro .cat-pop-start { z-index:5; }
+body.cat-pop-intro .cat-pop-note { color:#ef2645; background:transparent; padding:22px 10px 6px; font-size:clamp(23px,6vw,32px); transform:rotate(-3deg); }
+body.cat-pop-intro .cat-pop-note::after { content:' ✦'; color:#f51c3b; }
+body.cat-pop-intro .cat-pop-brand { width:165px; }
+body.cat-pop-intro .cat-pop-topbar::after {
+  content:'✦  ✧'; font:700 30px var(--cat-note-font);
+  color:#f51c3b; transform:rotate(13deg); margin-right:18px;
+}
+/* CTA를 누른 뒤에는 완전히 인트로에서 나와 STEP 01 화면만 표시 */
+body.cat-pop-selection:not(.cat-pop-intro) #cat-pop-hero { display:none !important; }
+body.cat-pop-selection:not(.cat-pop-intro) #app-shell { padding-top:clamp(30px,7vh,58px); }
+body.cat-pop-selection:not(.cat-pop-intro) #selection-screen { margin-top:0; }
+body.cat-pop-selection:not(.cat-pop-intro) #selection-screen::before {
+  content:'✦  인생네컷  ✦';
+  display:block;
+  margin:-10px 0 18px;
+  text-align:center;
+  font:700 clamp(28px,7vw,40px)/1.1 var(--cat-headline-font);
+  color:#f51c3b;
+  transform:rotate(-3deg);
+}
+/* 지금까지 만든 색상·고양이·문구는 변경하지 않음. 다른 단계 폰트만 통일. */
+body.cat-pop-selection #selection-heading,
+body:not(.cat-pop-intro) #capture-heading,
+body:not(.cat-pop-intro) #result-heading {
+  font-family:var(--cat-headline-font);
+  font-weight:700;
+  letter-spacing:-.025em;
+  line-height:1.2;
+}
+body.cat-pop-selection #selection-heading { font-size:clamp(25px,7vw,36px); }
+body.cat-pop-selection .cut-option-label,
+body:not(.cat-pop-intro) #page-title,
+body:not(.cat-pop-intro) .capture-button,
+body:not(.cat-pop-intro) .secondary-button,
+body:not(.cat-pop-intro) .filter-btn { font-family:var(--cat-ui-font); }
+body.cat-pop-selection .cut-option-description,
+body.cat-pop-selection #selection-status,
+body:not(.cat-pop-intro) .status-message,
+body:not(.cat-pop-intro) .camera-placeholder p,
+body:not(.cat-pop-intro) .intro { font-family:var(--cat-note-font); font-weight:700; }
+body:not(.cat-pop-selection):not(.cat-pop-intro) #page-header {
+  margin-bottom:20px;
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) #page-title {
+  color:#f51c3b; font-size:clamp(34px,8vw,50px); letter-spacing:-.04em;
+  text-shadow:2px 3px 0 rgba(255,255,255,.55);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .intro {
+  font-size:clamp(18px,4vw,23px); color:#8d324f;
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .photo-card {
+  background:#fff6f9;
+  border:2px solid #ffcade;
+  box-shadow:0 12px 25px rgba(126,44,80,.13);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .card-heading h2 {
+  color:#35202c;
+  font-size:clamp(25px,6vw,34px);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .step-label {
+  font:700 22px var(--cat-note-font);
+  color:#f05581;
+  letter-spacing:.03em;
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .step-badge {
+  font:700 17px var(--cat-note-font);
+  background:#ffe0ed;
+  color:#e52049;
+  border:1px solid #ffb9d2;
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .status-message {
+  color:#763750;
+  font-size:clamp(18px,4vw,23px);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .capture-button {
+  background:#f51c3b;
+  box-shadow:0 8px 0 #bb4b6c;
+  border-radius:18px;
+  font-size:clamp(20px,4.5vw,26px);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) .capture-button:hover:not(:disabled) { background:#e51c39; }
+body:not(.cat-pop-selection):not(.cat-pop-intro) .secondary-button {
+  color:#aa3454;
+  border:2px solid #ffb4cd;
+  border-radius:18px;
+  font-size:clamp(15px,3.5vw,19px);
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) #capture-progress {
+  font-family:var(--cat-note-font);
+  font-size:clamp(19px,4vw,23px);
+  color:#a73556;
+}
+body:not(.cat-pop-selection):not(.cat-pop-intro) #countdown {
+  z-index:5;
+  width:120px;
+  height:120px;
+  border:4px solid #fff;
+  background:rgba(243,30,72,.82);
+  color:white;
+  font:700 clamp(45px,11vw,64px) var(--cat-ui-font);
+  box-shadow:0 0 0 8px rgba(255,255,255,.17);
+}
+/* 촬영 사진에는 영향을 주지 않는 카메라 UI 데코레이션: 영상 위에 보이는 요소만. */
+#camera-stage { isolation:isolate; }
+.cat-camera-decor { position:absolute; inset:0; z-index:2; pointer-events:none; }
+.cat-camera-photo-tag {
+  position:absolute; top:14px; left:14px; padding:5px 12px;
+  border-radius:999px; color:white;
+  background:rgba(245,28,59,.88);
+  border:1px solid rgba(255,255,255,.65);
+  font:700 clamp(16px,4vw,20px) var(--cat-ui-font);
+  letter-spacing:.03em;
+}
+.cat-camera-corner {position:absolute; width:26px; height:26px; opacity:.86;}
+.cat-camera-corner.tl {top:12px; left:12px; border-top:3px solid #fff; border-left:3px solid #fff;}
+.cat-camera-corner.tr {top:12px; right:12px; border-top:3px solid #fff; border-right:3px solid #fff;}
+.cat-camera-corner.bl {bottom:12px; left:12px; border-bottom:3px solid #fff; border-left:3px solid #fff;}
+.cat-camera-corner.br {bottom:12px; right:12px; border-bottom:3px solid #fff; border-right:3px solid #fff;}
+#camera-stage.cat-camera-snap::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:rgba(255,255,255,.83);
+  animation:cat-camera-flash .25s ease-out both;
+  pointer-events:none;
+  z-index:4;
+}
+@keyframes cat-camera-flash {0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+@media (max-width:420px) {
+  body.cat-pop-intro .cat-pop-topbar { width:100%; height:60px; }
+  body.cat-pop-intro .cat-pop-brand { width:144px; }
+  body.cat-pop-intro .cat-pop-artwork { width:100%; }
+  body.cat-pop-intro .cat-pop-note { padding-top:16px; }
+  body.cat-pop-selection:not(.cat-pop-intro) #app-shell {padding-top:26px;}
+}
+@media (prefers-reduced-motion: reduce) {
+  #camera-stage.cat-camera-snap::after {animation:none; display:none;}
+}
