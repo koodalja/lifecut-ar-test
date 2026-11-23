@@ -127,10 +127,16 @@ function initApp() {
   var frameElement = document.getElementById("final-frame");
   var filtersContainer = document.getElementById("filters");
   var restartButton = document.getElementById("restart-button");
+  var qrButton = document.getElementById("qr-btn");
+  var qrMessage = document.getElementById("qr-message");
+  var qrBox = document.getElementById("qr-box");
+  var qrCodeElement = document.getElementById("qrcode");
+  var photoLink = document.getElementById("photo-link");
   var state = {
     shots: [],
     filter: "original",
-    cutCount: 0
+    cutCount: 0,
+    strip: null
   };
   var isCapturing = false;
 
@@ -139,6 +145,12 @@ function initApp() {
    * @returns {void} 결과 캔버스를 갱신합니다.
    */
   function renderResult() {
+    qrBox.classList.add("hidden");
+    qrButton.disabled = false;
+    qrMessage.textContent = "버튼을 누르면 사진이 공개 주소로 업로드됩니다.";
+    qrCodeElement.replaceChildren();
+    photoLink.removeAttribute("href");
+
     if (state.shots.length !== state.cutCount) {
       throw new Error("촬영한 사진이 모두 준비되지 않았어요.");
     }
@@ -156,6 +168,7 @@ function initApp() {
     frameElement.width = strip.width;
     frameElement.height = strip.height;
     context.drawImage(strip, 0, 0);
+    state.strip = strip;
   }
 
   /**
@@ -230,6 +243,38 @@ function initApp() {
 
   // 페이지를 준비할 때 필터 목록을 읽어 버튼을 자동으로 만듭니다.
   createFilterButtons();
+
+  // 완성 프레임을 업로드하고, 공개 주소의 QR 코드와 링크를 표시합니다.
+  qrButton.addEventListener("click", async function () {
+    if (qrButton.disabled || !state.strip) {
+      return;
+    }
+
+    var stripToUpload = state.strip;
+    qrButton.disabled = true;
+    qrMessage.textContent = "사진을 올리는 중이에요...";
+
+    try {
+      var photoUrl = await uploadPhoto(stripToUpload);
+      if (state.strip !== stripToUpload) {
+        return;
+      }
+
+      drawQrCode(qrCodeElement, photoUrl);
+      photoLink.href = photoUrl;
+      qrBox.classList.remove("hidden");
+      qrMessage.textContent = "사진을 올렸어요. QR 코드나 사진 열기 링크를 사용해 주세요.";
+    } catch (error) {
+      if (state.strip !== stripToUpload) {
+        return;
+      }
+
+      console.error("사진 업로드에 실패했습니다.", error);
+      qrMessage.textContent = "올리지 못했어요: "
+        + (error && error.message ? error.message : "알 수 없는 오류가 발생했습니다.");
+      qrButton.disabled = false;
+    }
+  });
 
   // 촬영 시작 버튼 한 번으로 선택한 수만큼 촬영을 자동으로 진행합니다.
   startButton.addEventListener("click", async function () {
