@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="180" viewBox="0 0 440 180">
+  <defs>
+    <linearGradient id="lenses" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff9bd2" stop-opacity=".75"/>
+      <stop offset=".56" stop-color="#ef4b96" stop-opacity=".36"/>
+      <stop offset="1" stop-color="#b42063" stop-opacity=".60"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffe0f3"/>
+      <stop offset=".3" stop-color="#ff74b6"/>
+      <stop offset="1" stop-color="#ec267c"/>
+    </linearGradient>
+  </defs>
+  <!-- 고영희씨 원본의 분홍 선글라스에서 착안한 실험용 2D 프레임 -->
+  <path d="M13 69 L44 81 M397 81 L427 67" fill="none" stroke="#e82879" stroke-width="15" stroke-linecap="round"/>
+  <rect x="43" y="33" width="161" height="122" rx="52" fill="url(#lenses)" stroke="#a20c59" stroke-width="15"/>
+  <rect x="236" y="33" width="161" height="122" rx="52" fill="url(#lenses)" stroke="#a20c59" stroke-width="15"/>
+  <rect x="43" y="33" width="161" height="122" rx="52" fill="none" stroke="url(#rim)" stroke-width="9"/>
+  <rect x="236" y="33" width="161" height="122" rx="52" fill="none" stroke="url(#rim)" stroke-width="9"/>
+  <path d="M199 72 Q219 53 241 72" stroke="#df2782" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M64 67 Q94 40 127 51 M259 65 Q293 39 329 52" stroke="#fff2f8" stroke-opacity=".68" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M75 100 Q105 83 118 87 M269 101 Q299 83 312 88" stroke="#fff" stroke-opacity=".26" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>
