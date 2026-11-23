@@ -1,7 +1,5 @@
-/* 고영희씨 AR: 핑크 선글라스 + 고양이 귀(머리띠 없음) + 고양이 수염 + 얼굴톤 보정
- * 기존 app.js / camera.js / cat-intro.js / index.html / CSS를 변경하지 않습니다.
- * 기존 FaceLandmarker 1개를 4개 기능이 공유합니다.
- * 준비 파일: images/cat-pink-glasses.svg, images/cat-ears-only.png
+/* 고영희씨 AR: 8개 얼굴 필터와 별도 뽀샤시 보정
+ * 기존 FaceLandmarker 1개로 카메라 미리보기와 저장 사진에 같은 효과를 적용합니다.
  * 주의: 이 버전은 얼굴 영역의 밝기/대비/채도를 부드럽게 조절하며
  *       피부 질감 리터칭이나 얼굴형 변경 기능은 아닙니다.
  */
@@ -13,7 +11,6 @@
   const MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
   const SETTINGS = Object.freeze({
-    glassesScale: 2.15,   // 기존 확대 버전 유지
     earsScale: 1.38,      // 얼굴 윤곽 너비에 대한 '귀 두 개 전체' 폭
     earsBaseDrop: 0.08,  // 귀 밑변 위치: 이마 지점에서 얼굴 폭의 8% 아래
     toneBrightness: 1.06,
@@ -23,6 +20,17 @@
     detectionInterval: 75   // 약 13fps로 얼굴 추적
   });
 
+  const AR_FILTERS = [
+    { key: 'heartPop', label: '고영희씨 하트뿅', asset: 'images/filters/heart-pop.png' },
+    { key: 'catEars', label: '고영희씨 팔랑귀', asset: 'images/filters/cat-ears.png' },
+    { key: 'whiskers', label: '고영희씨 냥수염', asset: 'images/filters/cat-whiskers.png' },
+    { key: 'blush', label: '고영희씨 발그레', asset: 'images/filters/pink-blush.png' },
+    { key: 'nose', label: '고영희씨 코찡긋', asset: 'images/filters/cat-nose.png' },
+    { key: 'sparkle', label: '고영희씨 별난냥', asset: 'images/filters/sparkle.png' },
+    { key: 'bubblegum', label: '고영희씨 껌씹냥', asset: 'images/filters/bubblegum.png' },
+    { key: 'party', label: '고영희씨 흥폭발', asset: 'images/filters/party-headphones.png' }
+  ];
+
   // MediaPipe 얼굴 윤곽선: 이마 -> 오른쪽 턱 -> 턱끝 -> 왼쪽 턱 -> 이마
   const FACE_OVAL = [
     10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
@@ -30,12 +38,13 @@
     172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
   ];
 
+  // 촬영 화면에 AR 필터 도구를 만들고 기존 카메라 흐름에 연결합니다.
   function init() {
     const screen = document.getElementById('capture-screen');
     const stage = document.getElementById('camera-stage');
     const video = document.getElementById('camera-video');
     const progress = document.getElementById('capture-progress');
-    if (!screen || !stage || !video || !progress || document.getElementById('cat-ar-toggle')) return;
+    if (!screen || !stage || !video || !progress || document.getElementById('cat-ar-toolbar')) return;
 
     if (typeof window.startCamera !== 'function' ||
         typeof window.stopCamera !== 'function' ||
@@ -53,38 +62,63 @@
     }
 
     const toolbar = document.createElement('div');
+    toolbar.id = 'cat-ar-toolbar';
     toolbar.className = 'cat-ar-toolbar';
-    toolbar.innerHTML = `
-      <button type="button" id="cat-ar-toggle" class="cat-ar-toggle" aria-pressed="false">😎 고영희씨 안경 OFF</button>
-      <button type="button" id="cat-ears-toggle" class="cat-ar-toggle" aria-pressed="false">🐱 고양이 귀 OFF</button>
-      <button type="button" id="cat-tone-toggle" class="cat-ar-toggle" aria-pressed="false">✨ 얼굴톤 OFF</button>
-      <button type="button" id="cat-whiskers-toggle" class="cat-ar-toggle" aria-pressed="false">🐾 고양이 수염 OFF</button>
-      <span id="cat-ar-status" class="cat-ar-status" role="status" aria-live="polite">기본 촬영</span>`;
+    const filterButtons = Object.create(null);
+    const filterGraphics = Object.create(null);
+    AR_FILTERS.forEach(filter => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'cat-filter-' + filter.key + '-toggle';
+      button.className = 'cat-ar-toggle cat-filter-toggle';
+      button.dataset.filter = filter.key;
+      button.setAttribute('aria-pressed', 'false');
+      button.setAttribute('aria-label', filter.label + ' OFF');
+
+      const thumbnail = document.createElement('img');
+      thumbnail.className = 'cat-ar-thumb';
+      thumbnail.src = filter.asset;
+      thumbnail.alt = '';
+      thumbnail.setAttribute('aria-hidden', 'true');
+      thumbnail.decoding = 'async';
+
+      const label = document.createElement('span');
+      label.className = 'cat-ar-label';
+      label.textContent = filter.label + ' OFF';
+      button.append(thumbnail, label);
+      toolbar.appendChild(button);
+      filterButtons[filter.key] = button;
+      filterGraphics[filter.key] = thumbnail;
+    });
+
+    const toneButton = document.createElement('button');
+    toneButton.type = 'button';
+    toneButton.id = 'cat-tone-toggle';
+    toneButton.className = 'cat-ar-toggle cat-tone-toggle';
+    toneButton.setAttribute('aria-pressed', 'false');
+    toneButton.setAttribute('aria-label', '고영희씨 뽀샤시 OFF');
+    toneButton.textContent = '고영희씨 뽀샤시 OFF';
+
+    const status = document.createElement('span');
+    status.id = 'cat-ar-status';
+    status.className = 'cat-ar-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = '기본 촬영';
+    toolbar.append(toneButton, status);
     progress.insertAdjacentElement('afterend', toolbar);
 
-    const glassesButton = toolbar.querySelector('#cat-ar-toggle');
-    const earsButton = toolbar.querySelector('#cat-ears-toggle');
-    const toneButton = toolbar.querySelector('#cat-tone-toggle');
-    const whiskersButton = toolbar.querySelector('#cat-whiskers-toggle');
-    const status = toolbar.querySelector('#cat-ar-status');
     const overlay = document.createElement('canvas');
     overlay.id = 'cat-ar-overlay';
     overlay.className = 'cat-ar-overlay';
     overlay.setAttribute('aria-hidden', 'true');
     stage.appendChild(overlay);
 
-    const glassesGraphic = new Image();
-    glassesGraphic.decoding = 'async';
-    glassesGraphic.src = 'images/cat-pink-glasses.svg';
-
-    const earsGraphic = new Image();
-    earsGraphic.decoding = 'async';
-    earsGraphic.src = 'images/cat-ears-only.png';
-
-    let glassesEnabled = false;
-    let earsEnabled = false;
+    const enabledFilters = Object.create(null);
+    AR_FILTERS.forEach(filter => {
+      enabledFilters[filter.key] = false;
+    });
     let toneEnabled = false;
-    let whiskersEnabled = false;
     let detector = null;
     let loadPromise = null;
     let raf = null;
@@ -98,23 +132,30 @@
     const toneContext = toneCanvas.getContext('2d');
     const maskContext = faceMaskCanvas.getContext('2d');
 
-    const anyEnabled = () => glassesEnabled || earsEnabled || toneEnabled || whiskersEnabled;
+    // 추적을 계속할 AR 효과나 보정이 하나라도 켜져 있는지 확인합니다.
+    const anyEnabled = () => toneEnabled
+      || AR_FILTERS.some(filter => enabledFilters[filter.key]);
 
+    // 얼굴 추적 상태를 화면 안내에 표시합니다.
     function updateStatus(message) {
       status.textContent = message;
     }
 
+    // AR 필터와 뽀샤시 버튼의 접근성 상태와 ON/OFF 문구를 맞춥니다.
     function updateButtons() {
-      glassesButton.setAttribute('aria-pressed', String(glassesEnabled));
-      glassesButton.textContent = glassesEnabled ? '😎 고영희씨 안경 ON' : '😎 고영희씨 안경 OFF';
-      earsButton.setAttribute('aria-pressed', String(earsEnabled));
-      earsButton.textContent = earsEnabled ? '🐱 고양이 귀 ON' : '🐱 고양이 귀 OFF';
+      AR_FILTERS.forEach(filter => {
+        const isEnabled = enabledFilters[filter.key];
+        const label = filter.label + (isEnabled ? ' ON' : ' OFF');
+        filterButtons[filter.key].setAttribute('aria-pressed', String(isEnabled));
+        filterButtons[filter.key].setAttribute('aria-label', label);
+        filterButtons[filter.key].querySelector('.cat-ar-label').textContent = label;
+      });
       toneButton.setAttribute('aria-pressed', String(toneEnabled));
-      toneButton.textContent = toneEnabled ? '✨ 얼굴톤 ON' : '✨ 얼굴톤 OFF';
-      whiskersButton.setAttribute('aria-pressed', String(whiskersEnabled));
-      whiskersButton.textContent = whiskersEnabled ? '🐾 고양이 수염 ON' : '🐾 고양이 수염 OFF';
+      toneButton.setAttribute('aria-label', '고영희씨 뽀샤시 ' + (toneEnabled ? 'ON' : 'OFF'));
+      toneButton.textContent = '고영희씨 뽀샤시 ' + (toneEnabled ? 'ON' : 'OFF');
     }
 
+    // 첫 필터 사용 때만 MediaPipe 얼굴 추적 모델을 불러옵니다.
     async function loadDetector() {
       if (detector) return detector;
       if (!loadPromise) {
@@ -147,11 +188,13 @@
       return loadPromise;
     }
 
+    // 미리보기 위에 그린 AR 장식을 지웁니다.
     function clearOverlay() {
       const context = overlay.getContext('2d');
       if (context) context.clearRect(0, 0, overlay.width, overlay.height);
     }
 
+    // 예약된 얼굴 추적을 멈추고 미리보기 장식을 정리합니다.
     function stopTracking() {
       if (raf !== null) cancelAnimationFrame(raf);
       raf = null;
@@ -160,10 +203,12 @@
       clearOverlay();
     }
 
+    // 카메라 영상이 실제 프레임을 내보내고 있는지 확인합니다.
     function videoActive() {
       return Boolean(video.srcObject && video.videoWidth && video.videoHeight && video.readyState >= 2);
     }
 
+    // 현재 카메라 프레임에서 얼굴 특징점을 추적합니다.
     function detectFace() {
       if (!detector || !videoActive()) return null;
       const now = performance.now();
@@ -172,108 +217,167 @@
       return results?.faceLandmarks?.[0] ?? null;
     }
 
-    // 기존 잘 작동하는 선글라스 위치·회전을 그대로 사용합니다.
-    function drawGlasses(context, face, width, height) {
-      if (!face || !glassesGraphic.complete || !glassesGraphic.naturalWidth) return false;
-      const left = face[33];
-      const right = face[263];
-      if (!left || !right) return false;
-      const dx = (right.x - left.x) * width;
-      const dy = (right.y - left.y) * height;
-      const span = Math.hypot(dx, dy);
-      if (!Number.isFinite(span) || span < 12) return false;
-      const x = ((left.x + right.x) / 2) * width;
-      const y = ((left.y + right.y) / 2) * height;
-      const glassesWidth = span * SETTINGS.glassesScale;
-      const glassesHeight = glassesWidth * (180 / 440);
+    // 얼굴 특징점에서 얼굴 폭·눈 기울기·코와 입 위치를 한 번 계산합니다.
+    function getFaceMetrics(face, width, height) {
+      if (!face) return null;
+      const forehead = face[10], chin = face[152];
+      const leftSide = face[234], rightSide = face[454];
+      const leftEye = face[33], rightEye = face[263];
+      const nose = face[1], mouthLeft = face[61], mouthRight = face[291];
+      if (!forehead || !chin || !leftSide || !rightSide
+          || !leftEye || !rightEye || !nose || !mouthLeft || !mouthRight) return null;
+
+      const leftX = leftSide.x * width, leftY = leftSide.y * height;
+      const rightX = rightSide.x * width, rightY = rightSide.y * height;
+      const eyeLeftX = leftEye.x * width, eyeLeftY = leftEye.y * height;
+      const eyeRightX = rightEye.x * width, eyeRightY = rightEye.y * height;
+      const faceWidth = Math.hypot(rightX - leftX, rightY - leftY);
+      if (!Number.isFinite(faceWidth) || faceWidth < 25) return null;
+
+      return {
+        faceWidth: faceWidth,
+        centerX: (leftX + rightX) / 2,
+        foreheadX: forehead.x * width,
+        foreheadY: forehead.y * height,
+        chinY: chin.y * height,
+        eyeCenterX: (eyeLeftX + eyeRightX) / 2,
+        eyeCenterY: (eyeLeftY + eyeRightY) / 2,
+        eyeSpan: Math.hypot(eyeRightX - eyeLeftX, eyeRightY - eyeLeftY),
+        noseX: nose.x * width,
+        noseY: nose.y * height,
+        mouthX: ((mouthLeft.x + mouthRight.x) / 2) * width,
+        mouthY: ((mouthLeft.y + mouthRight.y) / 2) * height,
+        roll: Math.atan2(eyeRightY - eyeLeftY, eyeRightX - eyeLeftX)
+      };
+    }
+
+    // 투명 PNG를 얼굴 기준점에 회전·배치해 미리보기와 사진에 같이 그립니다.
+    function drawFaceGraphic(context, graphic, x, y, drawWidth, roll, scale) {
+      if (!graphic || !graphic.complete || !graphic.naturalWidth || drawWidth <= 0) return false;
+      const size = drawWidth * (scale || 1);
+      const drawHeight = size * graphic.naturalHeight / graphic.naturalWidth;
       context.save();
       context.translate(x, y);
-      context.rotate(Math.atan2(dy, dx));
-      context.drawImage(glassesGraphic, -glassesWidth / 2, -glassesHeight * 0.50, glassesWidth, glassesHeight);
+      context.rotate(roll);
+      context.drawImage(graphic, -size / 2, -drawHeight / 2, size, drawHeight);
       context.restore();
       return true;
     }
 
-    // 고양이 귀만 이마 위에 배치합니다. 머리띠 이미지는 사용하지 않습니다.
+    // 하트 선글라스를 눈 사이 간격에 맞춰 놓습니다.
+    function drawHeartPop(context, face, width, height) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics || metrics.eyeSpan < 12) return false;
+      return drawFaceGraphic(
+        context, filterGraphics.heartPop, metrics.eyeCenterX, metrics.eyeCenterY,
+        metrics.eyeSpan * 2.15, metrics.roll
+      );
+    }
+
+    // 귀 PNG의 밑변이 이마 바로 위에 닿도록 배치합니다.
     function drawEars(context, face, width, height) {
-      if (!face || !earsGraphic.complete || !earsGraphic.naturalWidth) return false;
-      const forehead = face[10];
-      const leftSide = face[234];
-      const rightSide = face[454];
-      const leftEye = face[33];
-      const rightEye = face[263];
-      if (!forehead || !leftSide || !rightSide || !leftEye || !rightEye) return false;
-
-      const faceWidth = Math.hypot(
-        (rightSide.x - leftSide.x) * width,
-        (rightSide.y - leftSide.y) * height
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      const graphic = filterGraphics.catEars;
+      const drawWidth = metrics.faceWidth * SETTINGS.earsScale;
+      const drawHeight = graphic.naturalWidth
+        ? drawWidth * graphic.naturalHeight / graphic.naturalWidth
+        : 0;
+      const centerY = metrics.foreheadY + metrics.faceWidth * SETTINGS.earsBaseDrop - drawHeight / 2;
+      return drawFaceGraphic(
+        context, graphic, metrics.foreheadX, centerY, drawWidth, metrics.roll
       );
-      if (!Number.isFinite(faceWidth) || faceWidth < 25) return false;
-      const roll = Math.atan2(
-        (rightEye.y - leftEye.y) * height,
-        (rightEye.x - leftEye.x) * width
-      );
-      const drawWidth = faceWidth * SETTINGS.earsScale;
-      const drawHeight = drawWidth * earsGraphic.naturalHeight / earsGraphic.naturalWidth;
-
-      context.save();
-      context.translate(forehead.x * width, forehead.y * height);
-      context.rotate(roll);
-      // PNG의 양쪽 귀 하단이 이마(특징점 10) 바로 위에서 닿도록
-      context.drawImage(
-        earsGraphic,
-        -drawWidth / 2,
-        faceWidth * SETTINGS.earsBaseDrop - drawHeight,
-        drawWidth,
-        drawHeight
-      );
-      context.restore();
-      return true;
     }
 
-    // 얼굴을 따라 이동하는 양쪽 고양이 수염: 별도 이미지 파일이 필요 없습니다.
-    // 실제 눈·코·입 위치에서 기준점/회전각/크기를 가져와 미리보기와 저장에 동일하게 그림.
+    // 수염 스티커를 코와 입 중심에 맞춥니다.
     function drawWhiskers(context, face, width, height) {
-      if (!face) return false;
-      const leftEye = face[33], rightEye = face[263];
-      const leftEdge = face[234], rightEdge = face[454];
-      const nose = face[1], mouthL = face[61], mouthR = face[291];
-      if (!leftEye || !rightEye || !leftEdge || !rightEdge || !nose || !mouthL || !mouthR) return false;
-      const fw = Math.hypot((rightEdge.x - leftEdge.x) * width, (rightEdge.y - leftEdge.y) * height);
-      if (!Number.isFinite(fw) || fw < 25) return false;
-      const roll = Math.atan2((rightEye.y - leftEye.y) * height, (rightEye.x - leftEye.x) * width);
-      const mouthY = ((mouthL.y + mouthR.y) / 2) * height;
-      const baseY = nose.y * height * 0.48 + mouthY * 0.52;
-      const stroke = Math.max(1.3, fw * 0.008);
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      return drawFaceGraphic(
+        context, filterGraphics.whiskers, metrics.noseX,
+        metrics.noseY + metrics.faceWidth * 0.16,
+        metrics.faceWidth * 1.28, metrics.roll
+      );
+    }
+
+    // 양쪽 볼터치를 얼굴 폭에 맞춰 배치합니다.
+    function drawBlush(context, face, width, height) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      return drawFaceGraphic(
+        context, filterGraphics.blush, metrics.centerX,
+        metrics.mouthY - metrics.faceWidth * 0.08,
+        metrics.faceWidth * 1.18, metrics.roll
+      );
+    }
+
+    // 코와 입술 스티커를 코끝과 입 사이에 정렬합니다.
+    function drawNose(context, face, width, height) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      return drawFaceGraphic(
+        context, filterGraphics.nose, metrics.noseX,
+        metrics.noseY + metrics.faceWidth * 0.12,
+        metrics.faceWidth * 0.86, metrics.roll
+      );
+    }
+
+    // 별 장식 PNG를 양 볼 높이에 맞춰 그립니다.
+    function drawSparkle(context, face, width, height) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      return drawFaceGraphic(
+        context, filterGraphics.sparkle, metrics.centerX,
+        metrics.mouthY - metrics.faceWidth * 0.13,
+        metrics.faceWidth * 1.22, metrics.roll
+      );
+    }
+
+    // 풍선껌을 입에 맞춰 놓고 실시간 미리보기에서 숨 쉬듯 움직입니다.
+    function drawBubblegum(context, face, width, height, timestamp) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      const pulse = 1 + Math.sin(timestamp / 180) * 0.055;
+      const bounce = Math.sin(timestamp / 240) * metrics.faceWidth * 0.012;
+      return drawFaceGraphic(
+        context, filterGraphics.bubblegum, metrics.mouthX,
+        metrics.noseY + metrics.faceWidth * 0.19 + bounce,
+        metrics.faceWidth * 0.84, metrics.roll, pulse
+      );
+    }
+
+    // 핑크·하늘색·노랑 조명을 얼굴 주변에 부드럽게 비춥니다.
+    function drawPartyLights(context, metrics, timestamp) {
+      const pulse = 0.24 + (Math.sin(timestamp / 260) + 1) * 0.07;
+      const radius = metrics.faceWidth * 0.42;
+      const lights = [
+        { x: metrics.centerX - metrics.faceWidth * 0.34, y: metrics.foreheadY + metrics.faceWidth * 0.20, color: '255, 55, 153' },
+        { x: metrics.centerX + metrics.faceWidth * 0.34, y: metrics.foreheadY + metrics.faceWidth * 0.37, color: '48, 203, 255' },
+        { x: metrics.centerX, y: metrics.chinY - metrics.faceWidth * 0.02, color: '255, 220, 55' }
+      ];
+
       context.save();
-      context.translate(nose.x * width, baseY);
-      context.rotate(roll);
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      for (const side of [-1, 1]) {
-        for (let line = -1; line <= 1; line++) {
-          const startX = side * fw * 0.19;
-          const endX = side * fw * 0.49;
-          const y = line * fw * 0.069;
-          const endY = line * fw * 0.105;
-          const trace = () => {
-            context.beginPath();
-            context.moveTo(startX, y);
-            context.bezierCurveTo(side * fw * 0.26, y - fw * 0.015,
-              side * fw * 0.38, endY, endX, endY);
-            context.stroke();
-          };
-          // 밝은 외곽선을 얇게 두어 어두운 피부/배경에서도 수염이 묻히지 않게 함.
-          context.strokeStyle = 'rgba(255, 252, 250, 0.87)';
-          context.lineWidth = stroke * 2.5;
-          trace();
-          context.strokeStyle = 'rgba(148, 58, 88, 0.92)';
-          context.lineWidth = stroke;
-          trace();
-        }
-      }
+      context.globalCompositeOperation = 'screen';
+      lights.forEach(light => {
+        const gradient = context.createRadialGradient(light.x, light.y, 0, light.x, light.y, radius);
+        gradient.addColorStop(0, 'rgba(' + light.color + ', ' + pulse + ')');
+        gradient.addColorStop(1, 'rgba(' + light.color + ', 0)');
+        context.fillStyle = gradient;
+        context.fillRect(light.x - radius, light.y - radius, radius * 2, radius * 2);
+      });
       context.restore();
-      return true;
+    }
+
+    // 헤드폰 PNG를 머리와 귀 전체 폭에 맞춰 회전해 배치합니다.
+    function drawPartyHeadphones(context, face, width, height, timestamp) {
+      const metrics = getFaceMetrics(face, width, height);
+      if (!metrics) return false;
+      drawPartyLights(context, metrics, timestamp);
+      return drawFaceGraphic(
+        context, filterGraphics.party, metrics.centerX,
+        (metrics.foreheadY + metrics.chinY) / 2,
+        metrics.faceWidth * 1.9, metrics.roll
+      );
     }
 
     // 얼굴 윤곽을 부드럽게 마스킹해 톤 보정이 주변 배경에 적용되지 않게 합니다.
@@ -328,14 +432,25 @@
       return true;
     }
 
-    function drawSelected(context, face, width, height, source) {
-      // 톤 보정 먼저, 그 위에 소품 합성: 소품의 원래 색을 보존합니다.
+    // 선택된 효과를 같은 순서와 좌표로 카메라 미리보기와 저장 사진에 적용합니다.
+    function drawSelected(context, face, width, height, source, timestamp) {
+      const animationTime = Number.isFinite(timestamp) ? timestamp : performance.now();
       if (toneEnabled) applyFaceTone(context, source, face, width, height);
-      if (earsEnabled) drawEars(context, face, width, height);
-      if (glassesEnabled) drawGlasses(context, face, width, height);
-      if (whiskersEnabled) drawWhiskers(context, face, width, height);
+      if (enabledFilters.blush) drawBlush(context, face, width, height);
+      if (enabledFilters.sparkle) drawSparkle(context, face, width, height);
+      if (enabledFilters.whiskers) drawWhiskers(context, face, width, height);
+      if (enabledFilters.nose) drawNose(context, face, width, height);
+      if (enabledFilters.heartPop) drawHeartPop(context, face, width, height);
+      if (enabledFilters.catEars) drawEars(context, face, width, height);
+      if (enabledFilters.bubblegum) {
+        drawBubblegum(context, face, width, height, animationTime);
+      }
+      if (enabledFilters.party) {
+        drawPartyHeadphones(context, face, width, height, animationTime);
+      }
     }
 
+    // 추적한 얼굴 위치에 맞춰 미리보기 AR 장식을 다시 그립니다.
     function paintPreview() {
       if (!videoActive()) return;
       const bounds = stage.getBoundingClientRect();
@@ -362,10 +477,11 @@
       context.save();
       context.translate(offsetX, offsetY);
       context.scale(cover, cover);
-      drawSelected(context, latestFace, imageW, imageH, video);
+      drawSelected(context, latestFace, imageW, imageH, video, performance.now());
       context.restore();
     }
 
+    // 일정한 간격으로 얼굴을 추적하고 화면 효과를 갱신합니다.
     function trackingLoop(timestamp) {
       if (!anyEnabled() || !video.srcObject) {
         stopTracking();
@@ -378,10 +494,10 @@
         } catch (error) {
           console.error('[고영희 AR] 얼굴 추적 오류:', error);
           latestFace = null;
-          glassesEnabled = false;
-          earsEnabled = false;
+          AR_FILTERS.forEach(filter => {
+            enabledFilters[filter.key] = false;
+          });
           toneEnabled = false;
-          whiskersEnabled = false;
           updateButtons();
           updateStatus('얼굴 추적 오류 · OFF 후 다시 시도');
           stopTracking();
@@ -393,18 +509,19 @@
       raf = requestAnimationFrame(trackingLoop);
     }
 
+    // 카메라와 모델이 준비됐을 때 얼굴 추적 반복을 시작합니다.
     function startTracking() {
       if (!anyEnabled() || !detector || !video.srcObject || raf !== null) return;
       raf = requestAnimationFrame(trackingLoop);
     }
 
+    // 선택한 AR 스티커나 뽀샤시 보정을 켜거나 끕니다.
     async function toggleFilter(which) {
-      const current = which === 'glasses' ? glassesEnabled : which === 'ears' ? earsEnabled : which === 'tone' ? toneEnabled : whiskersEnabled;
+      const isTone = which === 'tone';
+      const current = isTone ? toneEnabled : enabledFilters[which];
       if (current) {
-        if (which === 'glasses') glassesEnabled = false;
-        else if (which === 'ears') earsEnabled = false;
-        else if (which === 'tone') toneEnabled = false;
-        else whiskersEnabled = false;
+        if (isTone) toneEnabled = false;
+        else enabledFilters[which] = false;
         updateButtons();
         if (!anyEnabled()) {
           stopTracking();
@@ -415,17 +532,14 @@
         return;
       }
 
-      const selectedButton = which === 'glasses' ? glassesButton : which === 'ears' ? earsButton : which === 'tone' ? toneButton : whiskersButton;
+      const selectedButton = isTone ? toneButton : filterButtons[which];
       selectedButton.disabled = true;
       updateStatus('얼굴 추적 모델 불러오는 중…');
       try {
-        if (which === 'ears') await earsGraphic.decode();
-        if (which === 'glasses') await glassesGraphic.decode();
+        if (!isTone) await filterGraphics[which].decode();
         await loadDetector();
-        if (which === 'glasses') glassesEnabled = true;
-        else if (which === 'ears') earsEnabled = true;
-        else if (which === 'tone') toneEnabled = true;
-        else whiskersEnabled = true;
+        if (isTone) toneEnabled = true;
+        else enabledFilters[which] = true;
         updateButtons();
         updateStatus(videoActive() ? '얼굴 추적 중' : '준비 완료 · 촬영 시작을 눌러 주세요');
         startTracking();
@@ -433,20 +547,18 @@
       } catch (error) {
         console.error('[고영희 AR] 초기화 실패:', error);
         updateButtons();
-        updateStatus(which === 'ears'
-          ? '고양이 귀 이미지 또는 얼굴 추적 모듈 연결 실패'
-          : which === 'glasses' ? '선글라스 이미지 또는 얼굴 추적 모듈 연결 실패'
-            : which === 'tone' ? '얼굴톤 보정 모델 연결 실패 · 인터넷 확인'
-              : '고양이 수염 얼굴 추적 모듈 연결 실패 · 인터넷 확인');
+        const filter = AR_FILTERS.find(item => item.key === which);
+        updateStatus((filter ? filter.label : '고영희씨 뽀샤시')
+          + ' 준비 실패 · 이미지와 인터넷 연결을 확인해 주세요');
       } finally {
         selectedButton.disabled = false;
       }
     }
 
-    glassesButton.addEventListener('click', () => toggleFilter('glasses'));
-    earsButton.addEventListener('click', () => toggleFilter('ears'));
+    AR_FILTERS.forEach(filter => {
+      filterButtons[filter.key].addEventListener('click', () => toggleFilter(filter.key));
+    });
     toneButton.addEventListener('click', () => toggleFilter('tone'));
-    whiskersButton.addEventListener('click', () => toggleFilter('whiskers'));
 
     const originalStartCamera = window.startCamera;
     const originalStopCamera = window.stopCamera;
@@ -469,7 +581,9 @@
         const freshFace = detectFace() || latestFace;
         if (freshFace) {
           const context = shot.getContext('2d');
-          if (context) drawSelected(context, freshFace, shot.width, shot.height, shot);
+          if (context) {
+            drawSelected(context, freshFace, shot.width, shot.height, shot, performance.now());
+          }
         }
       } catch (error) {
         console.warn('[고영희 AR] AR 또는 보정 적용 실패: 기본 사진을 유지합니다.', error);
