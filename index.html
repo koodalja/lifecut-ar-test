@@ -3,9 +3,10 @@
 <head id="doc-head">
   <meta id="doc-charset" charset="utf-8">
   <meta id="viewport-meta" name="viewport" content="width=device-width, initial-scale=1">
-  <meta id="theme-meta" name="theme-color" content="#f8f3ec">
+  <meta id="theme-meta" name="theme-color" content="#7ad7e8">
   <title id="doc-title">인생네컷 - 나만의 사진 프레임</title>
   <link id="main-stylesheet" rel="stylesheet" href="style.css">
+  <link id="cat-pop-styles" rel="stylesheet" href="cat-intro.css">
   <script id="supabase-script" defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script id="qrcode-script" defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script id="config-script" defer src="js/config.js"></script>
@@ -17,13 +18,35 @@
   <script defer src="js/cat-intro.js"></script>
   <script defer src="js/cat-glasses-ar.js"></script>
 </head>
-<body id="doc-body">
+<body id="doc-body" class="cat-pop-selection cat-pop-intro">
   <main id="app-shell" class="app-shell">
     <header id="page-header" class="page-header">
       <p id="page-eyebrow" class="eyebrow">오늘의 기록</p>
       <h1 id="page-title">인생네컷</h1>
       <p id="page-intro" class="intro">원하는 컷 수를 고르고 나만의 사진을 남겨 보세요.</p>
     </header>
+
+    <section id="cat-pop-hero" class="cat-pop-hero" aria-label="고영희씨 인생네컷 시작 화면">
+      <div class="cat-pop-intro-copy cat-pop-intro-copy-top">
+        <p class="cat-pop-intro-subtitle">풍선껌을 톡! 눌러 시작해요~</p>
+        <p class="cat-pop-intro-title">오늘의 주인공은 너다냥!</p>
+      </div>
+      <div class="cat-pop-topbar">
+        <p class="cat-pop-brand"><img src="images/brand-title.png" alt="인생네컷"></p>
+      </div>
+      <div class="cat-pop-artwork">
+        <img class="cat-pop-main-image" src="images/cat-hero.png" alt="고영희씨, 우짠일인교? 오늘도 달콤상콤한 사고 발생? 풍선껌을 불고 있는 고양이">
+        <button class="cat-pop-start" type="button" aria-label="풍선껌 터뜨리기, 사진 컷 수 선택으로 이동"></button>
+        <img class="cat-bubble-expand" src="images/cat-hero.png" alt="" aria-hidden="true">
+        <span class="cat-bubble-flash" aria-hidden="true"></span>
+        <span class="cat-pop-burst" aria-hidden="true">팡!</span>
+        <span class="cat-pop-ring" aria-hidden="true"></span>
+      </div>
+      <div class="cat-pop-intro-copy cat-pop-intro-copy-bottom">
+        <p class="cat-pop-intro-title">2·4·6·8컷, 취향대로 찰칵!</p>
+        <p class="cat-pop-intro-subtitle">일상에 추억을, 고영희씨와 함께~</p>
+      </div>
+    </section>
 
     <section id="selection-screen" class="photo-card workflow-screen" aria-labelledby="selection-heading">
       <div id="selection-heading-row" class="card-heading">
@@ -116,12 +139,12 @@
 
       <button id="qr-btn" class="capture-button qr-button" type="button">QR코드로 휴대폰에 받기</button>
       <p id="qr-message" class="qr-message" role="status" aria-live="polite">
-        버튼을 누르면 사진이 공개 주소로 업로드됩니다.
+        버튼을 누르면 사진을 안전하게 보관하고 QR 코드를 만들어요.
       </p>
       <div id="qr-box" class="qr-box hidden">
         <p id="qr-scan-instruction" class="qr-instruction">휴대폰 카메라로 QR코드를 비춰 보세요</p>
         <div id="qrcode" class="qrcode" aria-label="사진을 여는 QR 코드"></div>
-        <p id="qr-save-instruction" class="qr-instruction">열린 사진을 길게 눌러 저장하세요</p>
+        <p id="qr-save-instruction" class="qr-instruction">열린 화면에서 사진 다운로드 버튼을 눌러 저장하세요</p>
         <a id="photo-link" class="photo-link" href="" target="_blank" rel="noopener noreferrer">사진 열기</a>
       </div>
 
@@ -132,7 +155,7 @@
     </section>
 
     <footer id="page-footer" class="page-footer">
-      사진은 QR 코드 만들기를 눌렀을 때 공개 주소로 업로드됩니다.
+      사진은 QR 코드를 만들 때 비공개로 보관되며 24시간 뒤 자동 삭제됩니다.
     </footer>
   </main>
 </body>
