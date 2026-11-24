@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&family=Yeon+Sung&display=swap');
 
 /* 고영희씨 원본색 기반 팝아트 모바일 테마 (추가 CSS; 기존 style.css 보존) */
@@ -49,9 +50,23 @@ body.cat-pop-selection #page-header { display: none; }
   cursor: pointer; -webkit-tap-highlight-color: rgba(250, 36, 70, .15);
 }
 .cat-pop-start:focus-visible { outline: 3px solid var(--cat-red); outline-offset: 3px; }
+#cat-pop-hero .cat-pop-artwork .cat-pop-start {
+  left: 41.2%; top: 44.1%; width: 19.1%; height: 33.2%;
+  border-radius: 50%; z-index: 5; touch-action: manipulation;
+  overflow: visible; -webkit-tap-highlight-color: transparent;
+}
+#cat-pop-hero .cat-pop-start::before {
+  content: ''; position: absolute; inset: -5%; border: 2px dashed rgba(255,255,255,.95);
+  border-radius: 50%; animation: cat-bubble-hint 1.65s ease-in-out infinite;
+  pointer-events: none;
+}
+#cat-pop-hero .cat-pop-start:focus-visible { outline: 3px solid #f51c3b; outline-offset: 4px; }
 .cat-pop-burst, .cat-pop-ring {
   position: absolute; left: 51%; top: 58%;
   opacity: 0; pointer-events: none;
+}
+#cat-pop-hero .cat-pop-burst, #cat-pop-hero .cat-pop-ring {
+  left: 50.75%; top: 60.7%; z-index: 7;
 }
 .cat-pop-burst {
   z-index: 3;
@@ -64,19 +79,39 @@ body.cat-pop-selection #page-header { display: none; }
   width: 32%; aspect-ratio: 1; border: 7px solid white; border-radius: 50%;
   transform: translate(-50%, -50%) scale(.25);
 }
+#cat-pop-hero .cat-bubble-expand, #cat-pop-hero .cat-bubble-flash {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+}
+#cat-pop-hero .cat-bubble-expand {
+  width: 100%; height: 100%; object-fit: fill;
+  clip-path: ellipse(9.35% 16.1% at 50.75% 60.7%);
+  transform-origin: 50.75% 60.7%; z-index: 4;
+}
+#cat-pop-hero .cat-bubble-flash {
+  z-index: 6; inset: auto; left: 50.75%; top: 60.7%;
+  width: 26%; height: 41%; background: #fff5fa;
+  clip-path: polygon(50% 0%,60% 25%,82% 4%,79% 31%,100% 27%,87% 49%,100% 72%,76% 72%,79% 100%,57% 82%,50% 100%,38% 79%,14% 97%,23% 72%,0% 73%,14% 50%,0% 27%,23% 30%,19% 4%,42% 25%);
+  transform: translate(-50%,-50%) scale(.05);
+}
+#cat-pop-hero.cat-pop-bursting .cat-pop-start { pointer-events: none; }
+#cat-pop-hero.cat-pop-bursting .cat-pop-start::before { animation: none; opacity: 0; }
+#cat-pop-hero.cat-pop-bursting .cat-bubble-expand { animation: cat-bubble-grow .61s ease both; }
+#cat-pop-hero.cat-pop-bursting .cat-bubble-flash { animation: cat-bubble-pop .61s ease both; }
+#cat-pop-hero.cat-pop-bursting .cat-pop-burst { animation: cat-bubble-word .61s ease both; }
+#cat-pop-hero.cat-pop-bursting .cat-pop-ring { animation: cat-pop-ripple .43s .18s ease-out both; }
+@keyframes cat-bubble-hint { 0%,100%{opacity:0;transform:scale(.97)} 40%,65%{opacity:.9;transform:scale(1.09)} }
+@keyframes cat-bubble-grow { 0%{opacity:1;transform:scale(1)} 32%{opacity:1;transform:scale(1.27)} 39%,100%{opacity:0;transform:scale(1.27)} }
+@keyframes cat-bubble-pop { 0%,28%{opacity:0;transform:translate(-50%,-50%) scale(.05)} 42%{opacity:1;transform:translate(-50%,-50%) scale(1.55)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1.65)} }
+@keyframes cat-bubble-word { 0%,28%{opacity:0;transform:translate(-50%,-50%) scale(.15) rotate(-20deg)} 48%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-9deg)} 100%{opacity:1;transform:translate(-50%,-50%) scale(1.03) rotate(-9deg)} }
+@media (prefers-reduced-motion: reduce) {
+  #cat-pop-hero .cat-pop-start::before { animation: none; opacity: .8; }
+  #cat-pop-hero.cat-pop-bursting .cat-bubble-expand,
+  #cat-pop-hero.cat-pop-bursting .cat-bubble-flash,
+  #cat-pop-hero.cat-pop-bursting .cat-pop-burst,
+  #cat-pop-hero.cat-pop-bursting .cat-pop-ring { animation: none; }
+}
 .cat-pop-bursting .cat-pop-burst { animation: cat-pop-word .6s ease-out both; }
 .cat-pop-bursting .cat-pop-ring { animation: cat-pop-ripple .58s ease-out both; }
-.cat-pop-note {
-  margin: 0;
-  padding: 4px 12px 14px;
-  text-align: center;
-  color: #b12b4e;
-  background: var(--cat-blue);
-  font-family: var(--cat-font);
-  font-size: 20px;
-  font-weight: 800;
-}
-.cat-pop-note span { color: var(--cat-red); margin-left: 4px; }
 .cat-pop-image-error > img { display: none; }
 .cat-pop-error-message { color: #a5002e; padding: 20px; font-size: 14px; }
 @keyframes cat-pop-word {
@@ -164,8 +199,8 @@ body.cat-pop-selection .cut-option::after {
   position: absolute; top: 29%; right: 8%; pointer-events: none;
   font-size: clamp(19px, 5vw, 27px); line-height: 1;
 }
-body.cat-pop-selection #select-two-button::after { content: '♡'; color: #fa547d; transform: rotate(16deg); }
-body.cat-pop-selection #select-four-button::after { content: '✧'; color: #eeb900; transform: rotate(18deg); }
+body.cat-pop-selection #select-two-button::after { content: '\2661'; color: #fa547d; transform: rotate(16deg); }
+body.cat-pop-selection #select-four-button::after { content: '\2727'; color: #eeb900; transform: rotate(18deg); }
 body.cat-pop-selection .cut-option-label {
   display: inline-block;
   margin: 9px 0 3px;
@@ -229,7 +264,6 @@ body:not(.cat-pop-selection) .step-badge { color: #e11b45; background: #ffe3ed; 
   body.cat-pop-selection #selection-screen { padding: 20px 12px 15px; }
   body.cat-pop-selection .cut-option { min-height: 196px; padding: 15px 5px 10px; }
   body.cat-pop-selection .mini-frame { height: 86px; width: 56px; }
-  .cat-pop-note { font-size: 17px; padding-bottom: 8px; }
 }
 @media (max-width: 350px) {
   body.cat-pop-selection #selection-heading { font-size: 22px; }
@@ -247,8 +281,8 @@ body:not(.cat-pop-selection) .step-badge { color: #e11b45; background: #ffe3ed; 
   --cat-ui-font: 'Jua','Malgun Gothic',sans-serif;
   --cat-note-font: 'Gaegu','Malgun Gothic',sans-serif;
 }
-body#doc-body { background: #ff9ba8; }
-body.cat-pop-intro { background: #7ad7e8; }
+body#doc-body:not(.cat-pop-intro) { background: #ff9ba8; }
+body#doc-body.cat-pop-intro { background: #7ad7e8; }
 /* 인트로에서만 STEP 01 선택화면을 가림. 기존 버튼과 이벤트는 삭제하지 않음. */
 body.cat-pop-intro #selection-screen,
 body.cat-pop-intro #page-header,
@@ -274,11 +308,9 @@ body.cat-pop-intro #cat-pop-hero {
 body.cat-pop-intro .cat-pop-topbar { width:min(100%,540px); height:70px; flex:0 0 auto; }
 body.cat-pop-intro .cat-pop-artwork { width:min(100%,540px); flex:0 0 auto; }
 body.cat-pop-intro .cat-pop-start { z-index:5; }
-body.cat-pop-intro .cat-pop-note { color:#ef2645; background:transparent; padding:22px 10px 6px; font-size:clamp(23px,6vw,32px); transform:rotate(-3deg); }
-body.cat-pop-intro .cat-pop-note::after { content:' ✦'; color:#f51c3b; }
 body.cat-pop-intro .cat-pop-brand { width:165px; }
 body.cat-pop-intro .cat-pop-topbar::after {
-  content:'✦  ✧'; font:700 30px var(--cat-note-font);
+  content:'\2726  \2727'; font:700 30px var(--cat-note-font);
   color:#f51c3b; transform:rotate(13deg); margin-right:18px;
 }
 /* CTA를 누른 뒤에는 완전히 인트로에서 나와 STEP 01 화면만 표시 */
@@ -286,7 +318,7 @@ body.cat-pop-selection:not(.cat-pop-intro) #cat-pop-hero { display:none !importa
 body.cat-pop-selection:not(.cat-pop-intro) #app-shell { padding-top:clamp(30px,7vh,58px); }
 body.cat-pop-selection:not(.cat-pop-intro) #selection-screen { margin-top:0; }
 body.cat-pop-selection:not(.cat-pop-intro) #selection-screen::before {
-  content:'✦  인생네컷  ✦';
+  content:'\2726  인생네컷  \2726';
   display:block;
   margin:-10px 0 18px;
   text-align:center;
@@ -376,6 +408,25 @@ body:not(.cat-pop-selection):not(.cat-pop-intro) #countdown {
   font:700 clamp(45px,11vw,64px) var(--cat-ui-font);
   box-shadow:0 0 0 8px rgba(255,255,255,.17);
 }
+body:not(.cat-pop-selection):not(.cat-pop-intro) #camera-stage #countdown {
+  top:12px; right:12px; bottom:auto; left:auto;
+  width:76px; height:76px;
+  border:2px solid rgba(255,255,255,.88);
+  background:rgba(255,131,167,.22);
+  color:#fff;
+  font-size:clamp(32px,9vw,44px);
+  font-weight:900;
+  text-shadow:0 2px 8px rgba(96,15,44,.92),0 0 3px rgba(96,15,44,.85);
+  box-shadow:0 0 0 2px rgba(255,255,255,.15);
+  backdrop-filter:none;
+  pointer-events:none;
+}
+@media (max-width:420px) {
+  body:not(.cat-pop-selection):not(.cat-pop-intro) #camera-stage #countdown {
+    top:9px; right:9px; width:64px; height:64px;
+    font-size:36px;
+  }
+}
 /* 촬영 사진에는 영향을 주지 않는 카메라 UI 데코레이션: 영상 위에 보이는 요소만. */
 #camera-stage { isolation:isolate; }
 .cat-camera-decor { position:absolute; inset:0; z-index:2; pointer-events:none; }
@@ -406,7 +457,6 @@ body:not(.cat-pop-selection):not(.cat-pop-intro) #countdown {
   body.cat-pop-intro .cat-pop-topbar { width:100%; height:60px; }
   body.cat-pop-intro .cat-pop-brand { width:144px; }
   body.cat-pop-intro .cat-pop-artwork { width:100%; }
-  body.cat-pop-intro .cat-pop-note { padding-top:16px; }
   body.cat-pop-selection:not(.cat-pop-intro) #app-shell {padding-top:26px;}
 }
 @media (prefers-reduced-motion: reduce) {
@@ -451,8 +501,8 @@ body.cat-pop-selection #cut-options .mini-frame-6 {grid-template-rows:repeat(3,m
 body.cat-pop-selection #cut-options .mini-frame-8 {grid-template-rows:repeat(4,minmax(0,1fr));transform:rotate(4deg);}
 body.cat-pop-selection #cut-options .mini-frame-6 .mini-frame-photo,
 body.cat-pop-selection #cut-options .mini-frame-8 .mini-frame-photo {height:100%;min-height:0;}
-body.cat-pop-selection #select-six-button::after {content:'✿';color:#ee98b2;}
-body.cat-pop-selection #select-eight-button::after {content:'★';color:#f6af37;}
+body.cat-pop-selection #select-six-button::after {content:'\273f';color:#ee98b2;}
+body.cat-pop-selection #select-eight-button::after {content:'\2605';color:#f6af37;}
 body.cat-pop-selection #selection-badge {white-space:nowrap;}
 @media (max-width:420px) {
   body.cat-pop-selection #cut-options {gap:9px;}
@@ -537,4 +587,88 @@ body.cat-pop-selection #selection-badge {white-space:nowrap;}
   #cat-pop-hero.cat-pop-bursting .cat-pop-confetti,
   #cat-pop-hero.cat-pop-bursting .cat-pop-burst,
   #cat-pop-hero.cat-pop-bursting .cat-pop-ring {animation:none !important;}
+}
+
+.cat-pop-intro-copy { display: none; }
+body.cat-pop-intro .cat-pop-intro-copy {
+  display: block;
+  width: min(100%, 540px);
+  padding: 0 16px;
+  text-align: center;
+  word-break: keep-all;
+}
+body.cat-pop-intro .cat-pop-intro-title {
+  margin: 0;
+  color: #f51c3b;
+  font-family: var(--cat-headline-font);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -.03em;
+}
+body.cat-pop-intro .cat-pop-intro-subtitle {
+  margin: 6px 0 0;
+  color: #f51c3b;
+  font-family: var(--cat-note-font);
+  font-size: clamp(17px, 1.8vw, 20px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+}
+body.cat-pop-intro .cat-pop-intro-copy-top { margin-bottom: clamp(12px, 2vh, 20px); }
+body.cat-pop-intro .cat-pop-intro-copy-bottom { margin-top: clamp(12px, 2vh, 20px); }
+@media (max-width: 600px) {
+  body.cat-pop-intro .cat-pop-intro-copy {
+    width: 100%;
+    padding: 0 clamp(12px, 4vw, 20px);
+  }
+  body.cat-pop-intro .cat-pop-intro-copy p { white-space: nowrap; }
+  body.cat-pop-intro .cat-pop-intro-title {
+    font-family: var(--cat-ui-font);
+    font-weight: 700;
+  }
+  body.cat-pop-intro .cat-pop-intro-subtitle {
+    font-family: var(--cat-note-font);
+    font-weight: 400;
+  }
+  body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-title {
+    font-size: 24px;
+    transform: rotate(-4deg) translateX(-8px);
+  }
+  body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-subtitle {
+    font-size: 18px;
+    transform: rotate(0deg) translateX(5px);
+  }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-title {
+    font-size: 21px;
+    transform: rotate(3deg) translateX(8px);
+  }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-subtitle {
+    font-size: 17px;
+    transform: rotate(-1deg) translateX(-4px);
+  }
+  body.cat-pop-intro .cat-pop-intro-subtitle {
+    margin-top: 6px;
+  }
+  body.cat-pop-intro .cat-pop-intro-copy-top { margin-bottom: clamp(8px, 1.8svh, 14px); }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom { margin-top: clamp(8px, 1.8svh, 14px); }
+}
+@media (max-width: 350px) {
+  body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-title { font-size: 22px; }
+  body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-subtitle { font-size: 16px; }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-title { font-size: 19px; }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-subtitle { font-size: 15px; }
+}
+@media (max-height: 680px) {
+  body.cat-pop-intro #cat-pop-hero {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  body.cat-pop-intro .cat-pop-artwork { width: min(100%, 55svh); }
+  body.cat-pop-intro .cat-pop-topbar { height: 44px; }
+  body.cat-pop-intro .cat-pop-brand { height: 44px; }
+  body.cat-pop-intro .cat-pop-intro-title { font-size: clamp(20px, 5.6vw, 24px); line-height: 1.12; }
+  body.cat-pop-intro .cat-pop-intro-subtitle { font-size: clamp(14px, 4vw, 16px); line-height: 1.2; }
+  body.cat-pop-intro .cat-pop-intro-copy-top { margin-bottom: 6px; }
+  body.cat-pop-intro .cat-pop-intro-copy-bottom { margin-top: 6px; }
 }
