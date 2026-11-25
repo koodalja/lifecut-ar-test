@@ -623,32 +623,21 @@ body.cat-pop-intro .cat-pop-intro-copy-bottom { margin-top: clamp(12px, 2vh, 20p
     padding: 0 clamp(12px, 4vw, 20px);
   }
   body.cat-pop-intro .cat-pop-intro-copy p { white-space: nowrap; }
-  body.cat-pop-intro .cat-pop-intro-title {
-    font-family: var(--cat-ui-font);
-    font-weight: 700;
-  }
-  body.cat-pop-intro .cat-pop-intro-subtitle {
-    font-family: var(--cat-note-font);
-    font-weight: 400;
-  }
   body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-title {
     font-size: 24px;
-    transform: rotate(-4deg) translateX(-8px);
+    letter-spacing: -.78px;
   }
   body.cat-pop-intro .cat-pop-intro-copy-top .cat-pop-intro-subtitle {
     font-size: 18px;
-    transform: rotate(0deg) translateX(5px);
+    letter-spacing: -.34px;
   }
   body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-title {
     font-size: 21px;
-    transform: rotate(3deg) translateX(8px);
+    letter-spacing: -.78px;
   }
   body.cat-pop-intro .cat-pop-intro-copy-bottom .cat-pop-intro-subtitle {
     font-size: 17px;
-    transform: rotate(-1deg) translateX(-4px);
-  }
-  body.cat-pop-intro .cat-pop-intro-subtitle {
-    margin-top: 6px;
+    letter-spacing: -.34px;
   }
   body.cat-pop-intro .cat-pop-intro-copy-top { margin-bottom: clamp(8px, 1.8svh, 14px); }
   body.cat-pop-intro .cat-pop-intro-copy-bottom { margin-top: clamp(8px, 1.8svh, 14px); }
